@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     app_name: str = "AGENT_GIE-DA"
     app_env: str = "local"
     log_level: str = "INFO"
+    market_data_provider: str = "mock"
+    stooq_api_key: str | None = None
     x_bearer_token: str | None = None
     x_recent_search_max_results: int = 20
 

@@ -14,6 +14,7 @@ are connected.
 - Separate agents for fundamentals, technicals, sentiment, risk, and final
   synthesis.
 - Optional X recent-search ingestion for social sentiment analysis.
+- Optional Stooq CSV market-data ingestion with no API key required.
 - Typed request/response models.
 - Provider interfaces for future market data and LLM integrations.
 - Docker and Docker Compose setup.
@@ -77,6 +78,37 @@ It requests recent posts matching the company name, ticker, or cashtag, then
 normalizes post text, public engagement metrics, topics, and sentiment into the
 sentiment agent. Without a token, the app uses a deterministic mock social
 provider so local development and tests keep working.
+
+## Free Market Data
+
+The backend includes a Stooq provider for free public OHLCV market data. Stooq
+currently requires a free API key for automated CSV downloads. It uses this CSV
+download endpoint:
+
+```text
+https://stooq.com/q/d/l/?s={symbol}&d1={YYYYMMDD}&d2={YYYYMMDD}&i=d
+```
+
+Enable it in `.env`:
+
+```bash
+MARKET_DATA_PROVIDER=stooq
+STOOQ_API_KEY=your_free_stooq_api_key
+```
+
+Supported aliases include `AAPL`, `MSFT`, `CDR`, `CD PROJEKT`, `PKO`, `PKO BP`,
+`PKN`, and `ORLEN`. Unknown symbols default to the Warsaw suffix `.pl`; explicit
+Stooq-style symbols such as `aapl.us` or `cdr.pl` can also be passed. If Stooq is
+temporarily unavailable, the app falls back to the deterministic mock provider.
+
+To get the free Stooq key, open a URL such as:
+
+```text
+https://stooq.com/q/d/?s=aapl.us&get_apikey
+```
+
+Enter the captcha, then copy the value after `apikey=` from the generated CSV
+download link.
 
 ## Example Request
 

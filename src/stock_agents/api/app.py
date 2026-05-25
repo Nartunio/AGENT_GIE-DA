@@ -5,10 +5,21 @@ from stock_agents.core.orchestrator import AnalysisOrchestrator
 from stock_agents.core.schemas import AnalysisRequest, AnalysisResponse, HealthResponse
 from stock_agents.data.mock_provider import MockMarketDataProvider
 from stock_agents.data.mock_social_provider import MockSocialDataProvider
+from stock_agents.data.stooq_provider import StooqMarketDataProvider
 from stock_agents.data.x_provider import XRecentSearchProvider
 
 settings = get_settings()
 app = FastAPI(title=settings.app_name, version="0.1.0")
+
+mock_market_provider = MockMarketDataProvider()
+market_provider = (
+    StooqMarketDataProvider(
+        api_key=settings.stooq_api_key,
+        fallback_provider=mock_market_provider,
+    )
+    if settings.market_data_provider.lower() == "stooq"
+    else mock_market_provider
+)
 
 social_provider = (
     XRecentSearchProvider(
@@ -19,7 +30,7 @@ social_provider = (
     else MockSocialDataProvider()
 )
 orchestrator = AnalysisOrchestrator(
-    market_data_provider=MockMarketDataProvider(),
+    market_data_provider=market_provider,
     social_data_provider=social_provider,
 )
 

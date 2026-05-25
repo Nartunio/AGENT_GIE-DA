@@ -6,7 +6,7 @@ analysis agents.
 ## Request Flow
 
 1. API receives an `AnalysisRequest`.
-2. Orchestrator loads market context from a provider.
+2. Orchestrator loads market context from a provider such as Stooq or the mock provider.
 3. Orchestrator optionally loads social context from providers such as X.
 4. Specialized agents produce partial analyses.
 5. Synthesis agent combines results into one decision-oriented report.
@@ -23,9 +23,10 @@ analysis agents.
 
 ## Provider Boundary
 
-The first version uses a deterministic in-memory provider. Real integrations
-should implement the `MarketDataProvider` protocol without changing API or agent
-contracts.
+The app includes a deterministic in-memory provider and a Stooq CSV provider.
+Stooq requires a free API key for automated CSV downloads, configured as
+`STOOQ_API_KEY`. Market-data integrations implement the `MarketDataProvider`
+protocol without changing API or agent contracts.
 
 Social integrations implement `SocialDataProvider`. The included
 `XRecentSearchProvider` uses X API v2 recent search when `X_BEARER_TOKEN` is
