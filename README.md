@@ -15,6 +15,8 @@ are connected.
   synthesis.
 - Optional X recent-search ingestion for social sentiment analysis.
 - Optional Stooq CSV market-data ingestion with no API key required.
+- Technical chart analysis with trend lines, support, resistance, moving
+  averages, and pattern hints.
 - Typed request/response models.
 - Provider interfaces for future market data and LLM integrations.
 - Docker and Docker Compose setup.
@@ -34,6 +36,21 @@ Open:
 ```text
 http://127.0.0.1:8000/docs
 ```
+
+## Desktop Launcher
+
+On macOS you can run the local demo and API with:
+
+```bash
+./scripts/start_local.command
+```
+
+The launcher starts:
+
+- demo page: `http://127.0.0.1:8080`
+- API docs: `http://127.0.0.1:8000/docs`
+
+It also exists on the Desktop as `AGENT_GIE-DA-start.command` for quick launch.
 
 ## Docker
 
@@ -57,6 +74,15 @@ To publish it on GitHub:
 
 The demo is intentionally deterministic and does not yet fetch live market data.
 It is a frontend shell for the agent workflow.
+
+The demo also renders a technical chart with:
+
+- price line for the last 90 sessions,
+- SMA20 and SMA50,
+- trend line,
+- support and resistance levels,
+- pattern hints such as resistance tests, support tests, and moving-average
+  alignment.
 
 ## X Social Data
 

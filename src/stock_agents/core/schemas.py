@@ -34,11 +34,47 @@ class AnalysisRequest(BaseModel):
         return value.strip().upper()
 
 
+class PriceBar(BaseModel):
+    date: str
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: int = 0
+
+
+class ChartOverlay(BaseModel):
+    name: str
+    kind: str
+    start_index: int
+    end_index: int
+    start_value: float
+    end_value: float
+
+
+class TechnicalPattern(BaseModel):
+    name: str
+    direction: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    description: str
+
+
+class TechnicalAnalysis(BaseModel):
+    trend_direction: str
+    support: float | None = None
+    resistance: float | None = None
+    sma_short: float | None = None
+    sma_long: float | None = None
+    overlays: list[ChartOverlay] = Field(default_factory=list)
+    patterns: list[TechnicalPattern] = Field(default_factory=list)
+
+
 class MarketSnapshot(BaseModel):
     symbol: str
     company_name: str
     currency: str
     last_price: float
+    price_history: list[PriceBar] = Field(default_factory=list)
     market_cap: float | None = None
     pe_ratio: float | None = None
     revenue_growth: float | None = None
@@ -47,6 +83,7 @@ class MarketSnapshot(BaseModel):
     price_change_30d: float | None = None
     news_sentiment: float | None = None
     social_signal: "SocialSignal | None" = None
+    technical_analysis: TechnicalAnalysis | None = None
 
 
 class SocialPost(BaseModel):

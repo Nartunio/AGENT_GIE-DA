@@ -28,6 +28,14 @@ Stooq requires a free API key for automated CSV downloads, configured as
 `STOOQ_API_KEY`. Market-data integrations implement the `MarketDataProvider`
 protocol without changing API or agent contracts.
 
+## Chart Analysis
+
+Market snapshots can include `price_history` and `technical_analysis`. The
+technical analysis layer calculates SMA20, SMA50, trend direction, support,
+resistance, chart overlays, and pattern hints. `TechnicalAgent` uses those
+signals in its score and evidence, while the GitHub Pages demo renders the same
+concept visually as an SVG chart.
+
 Social integrations implement `SocialDataProvider`. The included
 `XRecentSearchProvider` uses X API v2 recent search when `X_BEARER_TOKEN` is
 configured. This keeps credentials on the backend; the static GitHub Pages demo

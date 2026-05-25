@@ -80,6 +80,7 @@ def test_stooq_provider_builds_snapshot_from_csv(monkeypatch: pytest.MonkeyPatch
     assert snapshot.currency == "PLN"
     assert snapshot.last_price == 108
     assert snapshot.price_change_30d == pytest.approx(0.03846, rel=0.001)
+    assert len(snapshot.price_history) == 3
 
 
 def test_stooq_provider_sends_api_key(monkeypatch: pytest.MonkeyPatch) -> None:

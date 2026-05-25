@@ -8,6 +8,7 @@ class TechnicalAgent(AnalysisAgent):
     def analyze(self, snapshot: MarketSnapshot, request: AnalysisRequest) -> AgentFinding:
         score = 0.0
         evidence: list[str] = []
+        technical = snapshot.technical_analysis
 
         if snapshot.price_change_30d is not None:
             if snapshot.price_change_30d > 0.05:
@@ -24,6 +25,19 @@ class TechnicalAgent(AnalysisAgent):
             elif snapshot.rsi_14 > 70:
                 score -= 0.15
                 evidence.append("RSI suggests overbought conditions.")
+
+        if technical is not None:
+            evidence.append(f"Chart trend: {technical.trend_direction}.")
+            if technical.support is not None and technical.resistance is not None:
+                evidence.append(
+                    f"Support near {technical.support:.2f}, resistance near {technical.resistance:.2f}."
+                )
+            for pattern in technical.patterns[:3]:
+                if pattern.direction == "bullish":
+                    score += 0.12 * pattern.confidence
+                elif pattern.direction == "bearish":
+                    score -= 0.12 * pattern.confidence
+                evidence.append(f"{pattern.name}: {pattern.description}")
 
         score = max(-1.0, min(1.0, score))
         return AgentFinding(

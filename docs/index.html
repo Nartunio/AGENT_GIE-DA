@@ -201,7 +201,7 @@
 
       .grid {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 14px;
       }
 
@@ -244,6 +244,82 @@
         margin: 0;
         color: var(--muted);
         line-height: 1.55;
+      }
+
+      .chart {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 18px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .chart-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+      }
+
+      .chart h3 {
+        margin: 0;
+        font-size: 17px;
+      }
+
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .legend i {
+        width: 18px;
+        height: 3px;
+        border-radius: 999px;
+        display: inline-block;
+      }
+
+      .chart svg {
+        width: 100%;
+        height: auto;
+        min-height: 320px;
+        display: block;
+        overflow: visible;
+      }
+
+      .signals {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px;
+      }
+
+      .signal {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 12px;
+        background: #fbfcfe;
+      }
+
+      .signal strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .signal p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.45;
+        font-size: 13px;
       }
 
       .agents {
@@ -555,8 +631,10 @@
       }
 
       function analyze(company, horizon, risk) {
+        const history = generateHistory(company);
+        const chart = analyzeChart(history);
         const fundamental = scoreFundamentals(company);
-        const technical = scoreTechnicals(company);
+        const technical = scoreTechnicals(company, chart);
         const sentiment = scoreSentiment(company);
         const riskScore = scoreRisk(company, risk);
         const scores = [fundamental, technical, sentiment, riskScore];
@@ -568,6 +646,7 @@
           confidence: Math.min(95, Math.round(48 + Math.abs(average) * 47)),
           average,
           agents: scores,
+          chart,
           thesis: buildThesis(company, rating, horizon, risk, average),
           risks: buildRisks(company, risk),
           actions: buildActions(company, rating),
@@ -601,7 +680,7 @@
         return agent("Fundamentalny", score, evidence);
       }
 
-      function scoreTechnicals(company) {
+      function scoreTechnicals(company, chart) {
         let score = 0;
         const evidence = [];
         if (company.trend > 0.05) {
@@ -620,6 +699,16 @@
         } else {
           evidence.push("RSI nie pokazuje skrajnego odchylenia.");
         }
+        if (chart.direction === "up") {
+          score += 0.16;
+          evidence.push("Linia trendu na wykresie jest wzrostowa.");
+        } else if (chart.direction === "down") {
+          score -= 0.16;
+          evidence.push("Linia trendu na wykresie jest spadkowa.");
+        } else {
+          evidence.push("Cena porusza sie w konsolidacji.");
+        }
+        chart.signals.slice(0, 3).forEach((signal) => evidence.push(signal.title + ": " + signal.text));
         return agent("Techniczny", score, evidence);
       }
 
@@ -733,6 +822,23 @@
             ${metric("Wzmianki social", String(company.socialMentions))}
           </div>
 
+          <section class="chart">
+            <div class="chart-head">
+              <h3>Wykres techniczny</h3>
+              <div class="legend">
+                <span><i style="background:#111827"></i>Cena</span>
+                <span><i style="background:#2563eb"></i>SMA20</span>
+                <span><i style="background:#b45309"></i>SMA50</span>
+                <span><i style="background:#15803d"></i>Trend</span>
+                <span><i style="background:#b91c1c"></i>Wsparcie / opor</span>
+              </div>
+            </div>
+            ${renderChart(analysis.chart, company)}
+            <div class="signals">
+              ${analysis.chart.signals.map(renderSignal).join("")}
+            </div>
+          </section>
+
           <section class="section">
             <h3>Teza</h3>
             <p>${escapeHtml(analysis.thesis)}</p>
@@ -766,6 +872,153 @@
             <div class="bar"><span style="width:${width}%"></span></div>
             <ul>${agentResult.evidence.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
           </article>
+        `;
+      }
+
+      function renderSignal(signal) {
+        return `
+          <div class="signal">
+            <strong>${escapeHtml(signal.title)}</strong>
+            <p>${escapeHtml(signal.text)}</p>
+          </div>
+        `;
+      }
+
+      function generateHistory(company) {
+        const seed = [...company.symbol].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+        const points = [];
+        const length = 90;
+        const drift = company.trend / length;
+        let close = company.price / (1 + company.trend || 1);
+
+        for (let index = 0; index < length; index += 1) {
+          const wave = Math.sin((index + seed) / 5) * 0.018 + Math.cos((index + seed) / 13) * 0.01;
+          const impulse = index > 62 && company.trend > 0.06 ? 0.0025 : 0;
+          close = Math.max(1, close * (1 + drift + wave + impulse));
+          const open = close * (1 - wave / 2);
+          const high = Math.max(open, close) * (1.008 + Math.abs(wave) / 3);
+          const low = Math.min(open, close) * (0.992 - Math.abs(wave) / 4);
+          points.push({
+            index,
+            open: round(open, 2),
+            high: round(high, 2),
+            low: round(low, 2),
+            close: round(close, 2),
+          });
+        }
+
+        const scale = company.price / points[points.length - 1].close;
+        return points.map((point) => ({
+          ...point,
+          open: round(point.open * scale, 2),
+          high: round(point.high * scale, 2),
+          low: round(point.low * scale, 2),
+          close: round(point.close * scale, 2),
+        }));
+      }
+
+      function analyzeChart(history) {
+        const closes = history.map((point) => point.close);
+        const lows = history.map((point) => point.low);
+        const highs = history.map((point) => point.high);
+        const support = Math.min(...lows.slice(-28));
+        const resistance = Math.max(...highs.slice(-28));
+        const sma20 = movingAverage(closes, 20);
+        const sma50 = movingAverage(closes, 50);
+        const start = closes[closes.length - 31];
+        const end = closes[closes.length - 1];
+        const trendChange = (end - start) / start;
+        const direction = trendChange > 0.05 ? "up" : trendChange < -0.05 ? "down" : "sideways";
+        const signals = [];
+
+        if ((resistance - end) / Math.max(resistance - support, 0.01) < 0.18) {
+          signals.push({
+            title: "Test oporu",
+            text: "Cena jest blisko gornego ograniczenia zakresu. Przebicie moze potwierdzic kontynuacje trendu.",
+          });
+        }
+        if ((end - support) / Math.max(resistance - support, 0.01) < 0.18) {
+          signals.push({
+            title: "Test wsparcia",
+            text: "Cena jest blisko wsparcia. Utrzymanie poziomu moze dac sygnal odbicia, a wybicie ostrzega przed spadkiem.",
+          });
+        }
+        if (sma20.at(-1) && sma50.at(-1) && sma20.at(-1) > sma50.at(-1) && end > sma20.at(-1)) {
+          signals.push({
+            title: "Uklad srednich wzrostowy",
+            text: "SMA20 jest powyzej SMA50, a cena utrzymuje sie nad srednimi.",
+          });
+        }
+        if (sma20.at(-1) && sma50.at(-1) && sma20.at(-1) < sma50.at(-1) && end < sma20.at(-1)) {
+          signals.push({
+            title: "Presja srednich",
+            text: "SMA20 jest pod SMA50, a cena pozostaje pod krotka srednia.",
+          });
+        }
+        if (signals.length === 0) {
+          signals.push({
+            title: "Brak czystej formacji",
+            text: "Wykres nie pokazuje jednoznacznego ukladu. Warto czekac na wybicie zakresu albo test srednich.",
+          });
+        }
+
+        return { history, support, resistance, sma20, sma50, direction, signals };
+      }
+
+      function movingAverage(values, period) {
+        return values.map((_, index) => {
+          if (index + 1 < period) return null;
+          const window = values.slice(index + 1 - period, index + 1);
+          return window.reduce((sum, value) => sum + value, 0) / period;
+        });
+      }
+
+      function renderChart(chart, company) {
+        const width = 920;
+        const height = 340;
+        const pad = { top: 22, right: 64, bottom: 32, left: 48 };
+        const values = [
+          ...chart.history.flatMap((point) => [point.high, point.low]),
+          ...chart.sma20.filter(Boolean),
+          ...chart.sma50.filter(Boolean),
+          chart.support,
+          chart.resistance,
+        ];
+        const min = Math.min(...values) * 0.985;
+        const max = Math.max(...values) * 1.015;
+        const x = (index) => pad.left + (index / (chart.history.length - 1)) * (width - pad.left - pad.right);
+        const y = (value) => pad.top + ((max - value) / (max - min)) * (height - pad.top - pad.bottom);
+        const closePath = chart.history.map((point) => `${x(point.index)},${y(point.close)}`).join(" ");
+        const sma20Path = chart.sma20
+          .map((value, index) => (value ? `${x(index)},${y(value)}` : null))
+          .filter(Boolean)
+          .join(" ");
+        const sma50Path = chart.sma50
+          .map((value, index) => (value ? `${x(index)},${y(value)}` : null))
+          .filter(Boolean)
+          .join(" ");
+        const trendStart = chart.history.length - 31;
+        const trendEnd = chart.history.length - 1;
+        const grid = Array.from({ length: 5 }, (_, index) => {
+          const value = min + ((max - min) / 4) * index;
+          const yy = y(value);
+          return `<line x1="${pad.left}" x2="${width - pad.right}" y1="${yy}" y2="${yy}" stroke="#e6ebf1"/><text x="${width - pad.right + 8}" y="${yy + 4}" fill="#5b6472" font-size="12">${value.toFixed(2)}</text>`;
+        }).join("");
+
+        return `
+          <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Wykres techniczny ${escapeHtml(company.name)}">
+            <rect x="0" y="0" width="${width}" height="${height}" fill="#ffffff"/>
+            ${grid}
+            <line x1="${pad.left}" x2="${width - pad.right}" y1="${y(chart.support)}" y2="${y(chart.support)}" stroke="#b91c1c" stroke-dasharray="7 6" stroke-width="2"/>
+            <line x1="${pad.left}" x2="${width - pad.right}" y1="${y(chart.resistance)}" y2="${y(chart.resistance)}" stroke="#b91c1c" stroke-dasharray="3 5" stroke-width="2"/>
+            <polyline points="${closePath}" fill="none" stroke="#111827" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+            <polyline points="${sma20Path}" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+            <polyline points="${sma50Path}" fill="none" stroke="#b45309" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+            <line x1="${x(trendStart)}" y1="${y(chart.history[trendStart].close)}" x2="${x(trendEnd)}" y2="${y(chart.history[trendEnd].close)}" stroke="#15803d" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="${x(trendEnd)}" cy="${y(chart.history[trendEnd].close)}" r="5" fill="#111827"/>
+            <text x="${pad.left}" y="${height - 8}" fill="#5b6472" font-size="12">90 sesji</text>
+            <text x="${width - pad.right - 140}" y="${height - 8}" fill="#5b6472" font-size="12">Ostatnia cena: ${company.price.toFixed(2)} ${company.currency}</text>
+          </svg>
         `;
       }
 

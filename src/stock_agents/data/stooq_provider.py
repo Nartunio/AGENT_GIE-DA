@@ -6,8 +6,9 @@ from typing import Any
 
 import httpx
 
-from stock_agents.core.schemas import MarketSnapshot
+from stock_agents.core.schemas import MarketSnapshot, PriceBar
 from stock_agents.data.provider import MarketDataProvider
+from stock_agents.data.technical_analysis import analyze_price_history
 
 
 class StooqMarketDataProvider:
@@ -99,6 +100,7 @@ class StooqMarketDataProvider:
         latest = rows[-1]
         comparison = rows[-22] if len(rows) >= 22 else rows[0]
         closes = [row["close"] for row in rows]
+        price_history = [row_to_price_bar(row) for row in rows]
         last_price = latest["close"]
         comparison_price = comparison["close"]
         price_change_30d = (
@@ -110,6 +112,7 @@ class StooqMarketDataProvider:
             company_name=self.company_names.get(stooq_symbol, requested_symbol.strip().upper()),
             currency=self._currency_for(stooq_symbol),
             last_price=last_price,
+            price_history=price_history,
             market_cap=None,
             pe_ratio=None,
             revenue_growth=None,
@@ -117,6 +120,7 @@ class StooqMarketDataProvider:
             rsi_14=calculate_rsi(closes),
             price_change_30d=price_change_30d,
             news_sentiment=None,
+            technical_analysis=analyze_price_history(price_history),
         )
 
     @classmethod
@@ -148,6 +152,17 @@ def parse_stooq_csv(csv_text: str) -> list[dict[str, Any]]:
             }
         )
     return rows
+
+
+def row_to_price_bar(row: dict[str, Any]) -> PriceBar:
+    return PriceBar(
+        date=row["date"],
+        open=row["open"],
+        high=row["high"],
+        low=row["low"],
+        close=row["close"],
+        volume=row["volume"],
+    )
 
 
 def calculate_rsi(closes: list[float], period: int = 14) -> float | None:

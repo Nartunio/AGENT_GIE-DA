@@ -23,3 +23,4 @@ def test_analyze_endpoint() -> None:
     body = response.json()
     assert body["symbol"] == "AAPL"
     assert body["findings"]
+    assert body["findings"][1]["agent"] == "technical"
