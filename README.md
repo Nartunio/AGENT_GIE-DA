@@ -39,6 +39,23 @@ http://127.0.0.1:8000/docs
 docker compose up --build
 ```
 
+## GitHub Pages Demo
+
+The repository includes a static browser demo in `docs/index.html`. It provides
+a company input field and generates a multi-agent report directly in the
+browser.
+
+To publish it on GitHub:
+
+1. Open repository `Settings`.
+2. Go to `Pages`.
+3. Set source to `Deploy from a branch`.
+4. Select branch `main` and folder `/docs`.
+5. Save.
+
+The demo is intentionally deterministic and does not yet fetch live market data.
+It is a frontend shell for the agent workflow.
+
 ## Example Request
 
 ```bash

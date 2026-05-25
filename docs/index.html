@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AGENT_GIE-DA</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f6f7f9;
+        --surface: #ffffff;
+        --surface-strong: #eef2f6;
+        --text: #111827;
+        --muted: #5b6472;
+        --line: #d9e0e8;
+        --blue: #2563eb;
+        --green: #15803d;
+        --red: #b91c1c;
+        --amber: #b45309;
+        --ink: #202938;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      .app {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+      }
+
+      .sidebar {
+        background: var(--ink);
+        color: #f8fafc;
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .mark {
+        width: 42px;
+        height: 42px;
+        border-radius: 8px;
+        display: grid;
+        place-items: center;
+        background: #f8fafc;
+        color: var(--ink);
+        font-weight: 800;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 22px;
+        line-height: 1.1;
+      }
+
+      .brand p {
+        margin: 4px 0 0;
+        color: #b8c2d1;
+        font-size: 13px;
+      }
+
+      .panel {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 16px;
+      }
+
+      .field {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+
+      label {
+        color: #dbe4ef;
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      input,
+      select {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        color: #f8fafc;
+        padding: 0 12px;
+        outline: none;
+      }
+
+      select option {
+        color: var(--text);
+      }
+
+      input:focus,
+      select:focus {
+        border-color: #8ab4ff;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.24);
+      }
+
+      .primary {
+        width: 100%;
+        min-height: 44px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--blue);
+        color: #fff;
+        font-weight: 750;
+        cursor: pointer;
+      }
+
+      .primary:hover {
+        background: #1d4ed8;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chip {
+        min-height: 34px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 999px;
+        background: transparent;
+        color: #e5edf7;
+        padding: 0 12px;
+        cursor: pointer;
+      }
+
+      .content {
+        padding: 34px;
+        display: grid;
+        gap: 22px;
+        align-content: start;
+      }
+
+      .topline {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: flex-start;
+      }
+
+      .company h2 {
+        margin: 0;
+        font-size: 30px;
+        line-height: 1.1;
+      }
+
+      .company p {
+        margin: 8px 0 0;
+        color: var(--muted);
+      }
+
+      .rating {
+        min-width: 150px;
+        padding: 14px;
+        border-radius: 8px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        text-align: right;
+      }
+
+      .rating strong {
+        display: block;
+        font-size: 24px;
+      }
+
+      .rating span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .metric,
+      .section,
+      .agent {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .metric {
+        padding: 15px;
+      }
+
+      .metric span {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 22px;
+      }
+
+      .section {
+        padding: 18px;
+      }
+
+      .section h3 {
+        margin: 0 0 12px;
+        font-size: 17px;
+      }
+
+      .section p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .agents {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .agent {
+        padding: 16px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .agent-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .agent h3 {
+        margin: 0;
+        font-size: 16px;
+      }
+
+      .score {
+        font-weight: 800;
+      }
+
+      .bar {
+        height: 9px;
+        border-radius: 999px;
+        background: var(--surface-strong);
+        overflow: hidden;
+      }
+
+      .bar > span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--blue);
+      }
+
+      .agent p,
+      li {
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+
+      .positive {
+        color: var(--green);
+      }
+
+      .negative {
+        color: var(--red);
+      }
+
+      .neutral {
+        color: var(--amber);
+      }
+
+      .empty {
+        min-height: 420px;
+        display: grid;
+        place-items: center;
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        color: var(--muted);
+        text-align: center;
+        padding: 28px;
+      }
+
+      @media (max-width: 980px) {
+        .app {
+          grid-template-columns: 1fr;
+        }
+
+        .grid,
+        .agents {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 620px) {
+        .sidebar,
+        .content {
+          padding: 20px;
+        }
+
+        .topline {
+          display: grid;
+        }
+
+        .rating {
+          text-align: left;
+        }
+
+        .grid,
+        .agents {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="mark">AG</div>
+          <div>
+            <h1>AGENT_GIE-DA</h1>
+            <p>Multiagentowa analiza spolek</p>
+          </div>
+        </div>
+
+        <form class="panel" id="analysis-form">
+          <div class="field">
+            <label for="company">Spolka albo ticker</label>
+            <input id="company" name="company" value="CD Projekt" autocomplete="off" />
+          </div>
+
+          <div class="field">
+            <label for="horizon">Horyzont</label>
+            <select id="horizon" name="horizon">
+              <option value="short">Krotki</option>
+              <option value="medium" selected>Sredni</option>
+              <option value="long">Dlugi</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="risk">Profil ryzyka</label>
+            <select id="risk" name="risk">
+              <option value="conservative">Konserwatywny</option>
+              <option value="balanced" selected>Zrownowazony</option>
+              <option value="aggressive">Agresywny</option>
+            </select>
+          </div>
+
+          <button class="primary" type="submit">Generuj raport</button>
+        </form>
+
+        <div class="chips" aria-label="Popularne spolki">
+          <button class="chip" type="button" data-symbol="PKO BP">PKO BP</button>
+          <button class="chip" type="button" data-symbol="Orlen">Orlen</button>
+          <button class="chip" type="button" data-symbol="CD Projekt">CD Projekt</button>
+          <button class="chip" type="button" data-symbol="Apple">Apple</button>
+          <button class="chip" type="button" data-symbol="Microsoft">Microsoft</button>
+        </div>
+      </aside>
+
+      <section class="content" id="report" aria-live="polite">
+        <div class="empty">
+          <div>
+            <strong>Wybierz spolke</strong>
+            <p>Raport pojawi sie tutaj po uruchomieniu analizy.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const companies = {
+        "PKO BP": {
+          symbol: "PKO.WA",
+          name: "PKO Bank Polski",
+          sector: "Banki",
+          price: 63.4,
+          currency: "PLN",
+          pe: 8.9,
+          growth: 0.07,
+          debt: 0.72,
+          rsi: 58,
+          trend: 0.09,
+          sentiment: 0.2,
+        },
+        ORLEN: {
+          symbol: "PKN.WA",
+          name: "Orlen",
+          sector: "Energia",
+          price: 72.1,
+          currency: "PLN",
+          pe: 11.8,
+          growth: 0.03,
+          debt: 1.35,
+          rsi: 46,
+          trend: -0.02,
+          sentiment: -0.05,
+        },
+        "CD PROJEKT": {
+          symbol: "CDR.WA",
+          name: "CD Projekt",
+          sector: "Gry",
+          price: 205.2,
+          currency: "PLN",
+          pe: 31.6,
+          growth: 0.18,
+          debt: 0.12,
+          rsi: 64,
+          trend: 0.12,
+          sentiment: 0.28,
+        },
+        APPLE: {
+          symbol: "AAPL",
+          name: "Apple Inc.",
+          sector: "Technologia",
+          price: 190,
+          currency: "USD",
+          pe: 29,
+          growth: 0.06,
+          debt: 1.6,
+          rsi: 54,
+          trend: 0.04,
+          sentiment: 0.18,
+        },
+        MICROSOFT: {
+          symbol: "MSFT",
+          name: "Microsoft Corporation",
+          sector: "Technologia",
+          price: 420,
+          currency: "USD",
+          pe: 34,
+          growth: 0.14,
+          debt: 0.4,
+          rsi: 61,
+          trend: 0.08,
+          sentiment: 0.24,
+        },
+      };
+
+      const aliases = {
+        PKO: "PKO BP",
+        "PKO.WA": "PKO BP",
+        PKN: "ORLEN",
+        "PKN.WA": "ORLEN",
+        ORLEN: "ORLEN",
+        CDR: "CD PROJEKT",
+        "CDR.WA": "CD PROJEKT",
+        "CD PROJEKT": "CD PROJEKT",
+        AAPL: "APPLE",
+        APPLE: "APPLE",
+        MSFT: "MICROSOFT",
+        MICROSOFT: "MICROSOFT",
+      };
+
+      const labels = {
+        short: "krotki",
+        medium: "sredni",
+        long: "dlugi",
+        conservative: "konserwatywny",
+        balanced: "zrownowazony",
+        aggressive: "agresywny",
+      };
+
+      const form = document.querySelector("#analysis-form");
+      const companyInput = document.querySelector("#company");
+      const report = document.querySelector("#report");
+
+      document.querySelectorAll("[data-symbol]").forEach((button) => {
+        button.addEventListener("click", () => {
+          companyInput.value = button.dataset.symbol;
+          form.requestSubmit();
+        });
+      });
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const formData = new FormData(form);
+        const query = String(formData.get("company") || "").trim();
+        const horizon = String(formData.get("horizon"));
+        const risk = String(formData.get("risk"));
+        const company = resolveCompany(query);
+        const analysis = analyze(company, horizon, risk);
+        renderReport(company, analysis, horizon, risk);
+      });
+
+      function resolveCompany(query) {
+        const key = query.toUpperCase();
+        const canonical = aliases[key] || key;
+        if (companies[canonical]) {
+          return companies[canonical];
+        }
+
+        const seed = [...key].reduce((sum, char) => sum + char.charCodeAt(0), 0) || 100;
+        return {
+          symbol: key.slice(0, 12),
+          name: query || "Nieznana spolka",
+          sector: "Do weryfikacji",
+          price: round(40 + (seed % 180), 2),
+          currency: "PLN",
+          pe: round(8 + (seed % 36), 1),
+          growth: round(((seed % 31) - 8) / 100, 2),
+          debt: round((seed % 24) / 10, 2),
+          rsi: 25 + (seed % 55),
+          trend: round(((seed % 29) - 12) / 100, 2),
+          sentiment: round(((seed % 41) - 20) / 100, 2),
+        };
+      }
+
+      function analyze(company, horizon, risk) {
+        const fundamental = scoreFundamentals(company);
+        const technical = scoreTechnicals(company);
+        const sentiment = scoreSentiment(company);
+        const riskScore = scoreRisk(company, risk);
+        const scores = [fundamental, technical, sentiment, riskScore];
+        const average = scores.reduce((sum, item) => sum + item.score, 0) / scores.length;
+        const rating = ratingFromScore(average);
+
+        return {
+          rating,
+          confidence: Math.min(95, Math.round(48 + Math.abs(average) * 47)),
+          average,
+          agents: scores,
+          thesis: buildThesis(company, rating, horizon, risk, average),
+          risks: buildRisks(company, risk),
+          actions: buildActions(company, rating),
+        };
+      }
+
+      function scoreFundamentals(company) {
+        let score = 0;
+        const evidence = [];
+        if (company.growth > 0.1) {
+          score += 0.35;
+          evidence.push("Wzrost przychodow przekracza 10%.");
+        } else if (company.growth < 0) {
+          score -= 0.35;
+          evidence.push("Dynamika przychodow jest ujemna.");
+        }
+        if (company.pe < 16) {
+          score += 0.25;
+          evidence.push("Wycena na wskazniku P/E jest umiarkowana.");
+        } else if (company.pe > 32) {
+          score -= 0.22;
+          evidence.push("Wycena wymaga wysokich oczekiwan rynku.");
+        }
+        if (company.debt < 1) {
+          score += 0.18;
+          evidence.push("Zadluzenie pozostaje pod kontrola.");
+        } else if (company.debt > 2) {
+          score -= 0.24;
+          evidence.push("Dzwignia finansowa jest podwyzszona.");
+        }
+        return agent("Fundamentalny", score, evidence);
+      }
+
+      function scoreTechnicals(company) {
+        let score = 0;
+        const evidence = [];
+        if (company.trend > 0.05) {
+          score += 0.34;
+          evidence.push("Trend 30-dniowy jest dodatni.");
+        } else if (company.trend < -0.05) {
+          score -= 0.34;
+          evidence.push("Trend 30-dniowy jest ujemny.");
+        }
+        if (company.rsi < 30) {
+          score += 0.14;
+          evidence.push("RSI sugeruje wyprzedanie.");
+        } else if (company.rsi > 70) {
+          score -= 0.14;
+          evidence.push("RSI sugeruje wykupienie.");
+        } else {
+          evidence.push("RSI nie pokazuje skrajnego odchylenia.");
+        }
+        return agent("Techniczny", score, evidence);
+      }
+
+      function scoreSentiment(company) {
+        const evidence =
+          company.sentiment > 0.12
+            ? ["Narracja rynkowa jest pozytywna."]
+            : company.sentiment < -0.12
+              ? ["Narracja rynkowa jest negatywna."]
+              : ["Narracja rynkowa jest mieszana."];
+        return agent("Sentyment", company.sentiment, evidence);
+      }
+
+      function scoreRisk(company, risk) {
+        let score = 0;
+        const evidence = [];
+        if (company.debt > 1.8) {
+          score -= 0.32;
+          evidence.push("Wysokie zadluzenie zwieksza wrazliwosc na stopy procentowe.");
+        }
+        if (company.pe > 35) {
+          score -= 0.24;
+          evidence.push("Wysoka wycena obniza margines bezpieczenstwa.");
+        }
+        if (risk === "conservative") {
+          score -= 0.12;
+          evidence.push("Profil konserwatywny wymaga wyzszej jakosci sygnalow.");
+        }
+        if (risk === "aggressive") {
+          score += 0.08;
+          evidence.push("Profil agresywny dopuszcza wieksza zmiennosc.");
+        }
+        return agent("Ryzyko", score, evidence.length ? evidence : ["Brak silnego sygnalu ryzyka."]);
+      }
+
+      function agent(name, score, evidence) {
+        const bounded = Math.max(-1, Math.min(1, score));
+        return { name, score: bounded, evidence };
+      }
+
+      function ratingFromScore(score) {
+        if (score >= 0.42) return "Mocne kupuj";
+        if (score >= 0.18) return "Kupuj";
+        if (score > -0.1) return "Neutralnie";
+        if (score > -0.34) return "Obserwuj";
+        return "Unikaj";
+      }
+
+      function buildThesis(company, rating, horizon, risk, score) {
+        const direction =
+          score > 0.18
+            ? "przewaga sygnalow pozytywnych"
+            : score < -0.1
+              ? "przewaga czynnikow ostroznosciowych"
+              : "mieszany zestaw sygnalow";
+        return `${company.name} (${company.symbol}) otrzymuje ocene "${rating}" na ${labels[horizon]} horyzont przy profilu ${labels[risk]}. Model widzi ${direction}, laczac fundamenty, technike, sentyment i ryzyko.`;
+      }
+
+      function buildRisks(company, risk) {
+        const risks = [];
+        if (company.pe > 30) risks.push("Wycena moze byc wrazliwa na korekte oczekiwan.");
+        if (company.debt > 1.5) risks.push("Zadluzenie podnosi ryzyko przy wyzszych kosztach finansowania.");
+        if (company.trend < 0) risks.push("Krotkoterminowy trend nie wspiera wejscia bez potwierdzenia.");
+        if (risk === "conservative") risks.push("Dla profilu konserwatywnego potrzebny jest wiekszy margines bezpieczenstwa.");
+        return risks.length ? risks : ["Najwiekszym ryzykiem jest jakosc danych zrodlowych i brak pelnego modelu wyceny."];
+      }
+
+      function buildActions(company, rating) {
+        if (rating.includes("Kupuj")) {
+          return [
+            "Porownaj wycene z najblizszymi konkurentami.",
+            "Sprawdz najnowszy raport kwartalny i guidance zarzadu.",
+            "Ustal poziom invalidacji tezy przed transakcja.",
+          ];
+        }
+        if (rating === "Unikaj") {
+          return [
+            "Poczekaj na poprawe dynamiki wynikow albo wyceny.",
+            "Zweryfikuj, czy negatywne sygnaly sa jednorazowe.",
+            "Porownaj alternatywy w sektorze " + company.sector + ".",
+          ];
+        }
+        return [
+          "Dodaj spolke do watchlisty.",
+          "Poczekaj na mocniejszy sygnal fundamentalny albo techniczny.",
+          "Zweryfikuj dane w zewnetrznym zrodle przed decyzja.",
+        ];
+      }
+
+      function renderReport(company, analysis, horizon, risk) {
+        const scoreClass =
+          analysis.average > 0.18 ? "positive" : analysis.average < -0.1 ? "negative" : "neutral";
+        report.innerHTML = `
+          <div class="topline">
+            <div class="company">
+              <h2>${escapeHtml(company.name)}</h2>
+              <p>${escapeHtml(company.symbol)} · ${escapeHtml(company.sector)} · ${labels[horizon]} horyzont · ${labels[risk]} profil</p>
+            </div>
+            <div class="rating">
+              <strong class="${scoreClass}">${escapeHtml(analysis.rating)}</strong>
+              <span>Pewnosc ${analysis.confidence}%</span>
+            </div>
+          </div>
+
+          <div class="grid">
+            ${metric("Cena", `${company.price.toFixed(2)} ${company.currency}`)}
+            ${metric("P/E", company.pe.toFixed(1))}
+            ${metric("Wzrost", percent(company.growth))}
+            ${metric("Trend 30D", percent(company.trend))}
+          </div>
+
+          <section class="section">
+            <h3>Teza</h3>
+            <p>${escapeHtml(analysis.thesis)}</p>
+          </section>
+
+          <div class="agents">
+            ${analysis.agents.map(renderAgent).join("")}
+          </div>
+
+          <section class="section">
+            <h3>Ryzyka</h3>
+            <ul>${analysis.risks.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+          </section>
+
+          <section class="section">
+            <h3>Nastepne kroki</h3>
+            <ul>${analysis.actions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+          </section>
+        `;
+      }
+
+      function renderAgent(agentResult) {
+        const width = Math.round(((agentResult.score + 1) / 2) * 100);
+        const scoreClass = agentResult.score > 0.15 ? "positive" : agentResult.score < -0.15 ? "negative" : "neutral";
+        return `
+          <article class="agent">
+            <div class="agent-head">
+              <h3>${escapeHtml(agentResult.name)}</h3>
+              <span class="score ${scoreClass}">${agentResult.score.toFixed(2)}</span>
+            </div>
+            <div class="bar"><span style="width:${width}%"></span></div>
+            <ul>${agentResult.evidence.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+          </article>
+        `;
+      }
+
+      function metric(label, value) {
+        return `<div class="metric"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`;
+      }
+
+      function percent(value) {
+        return `${(value * 100).toFixed(1)}%`;
+      }
+
+      function round(value, places) {
+        const factor = 10 ** places;
+        return Math.round(value * factor) / factor;
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      form.requestSubmit();
+    </script>
+  </body>
+</html>
