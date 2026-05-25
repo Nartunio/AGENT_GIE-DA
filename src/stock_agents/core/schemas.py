@@ -46,6 +46,30 @@ class MarketSnapshot(BaseModel):
     rsi_14: float | None = None
     price_change_30d: float | None = None
     news_sentiment: float | None = None
+    social_signal: "SocialSignal | None" = None
+
+
+class SocialPost(BaseModel):
+    platform: str
+    post_id: str
+    text: str
+    author: str | None = None
+    created_at: str | None = None
+    url: str | None = None
+    like_count: int = 0
+    repost_count: int = 0
+    reply_count: int = 0
+    quote_count: int = 0
+
+
+class SocialSignal(BaseModel):
+    platform: str
+    query: str
+    mention_count: int
+    sentiment_score: float = Field(ge=-1.0, le=1.0)
+    engagement_score: float = Field(ge=0.0)
+    key_topics: list[str] = Field(default_factory=list)
+    sample_posts: list[SocialPost] = Field(default_factory=list)
 
 
 class AgentFinding(BaseModel):

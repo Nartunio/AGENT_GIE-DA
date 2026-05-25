@@ -360,7 +360,7 @@
           <div class="mark">AG</div>
           <div>
             <h1>AGENT_GIE-DA</h1>
-            <p>Multiagentowa analiza spolek</p>
+        <p>Multiagentowa analiza spolek z sygnalem social</p>
           </div>
         </div>
 
@@ -423,7 +423,8 @@
           debt: 0.72,
           rsi: 58,
           trend: 0.09,
-          sentiment: 0.2,
+        sentiment: 0.2,
+        socialMentions: 34,
         },
         ORLEN: {
           symbol: "PKN.WA",
@@ -436,7 +437,8 @@
           debt: 1.35,
           rsi: 46,
           trend: -0.02,
-          sentiment: -0.05,
+        sentiment: -0.05,
+        socialMentions: 21,
         },
         "CD PROJEKT": {
           symbol: "CDR.WA",
@@ -450,6 +452,7 @@
           rsi: 64,
           trend: 0.12,
           sentiment: 0.28,
+          socialMentions: 48,
         },
         APPLE: {
           symbol: "AAPL",
@@ -463,6 +466,7 @@
           rsi: 54,
           trend: 0.04,
           sentiment: 0.18,
+          socialMentions: 57,
         },
         MICROSOFT: {
           symbol: "MSFT",
@@ -476,6 +480,7 @@
           rsi: 61,
           trend: 0.08,
           sentiment: 0.24,
+          socialMentions: 62,
         },
       };
 
@@ -545,6 +550,7 @@
           rsi: 25 + (seed % 55),
           trend: round(((seed % 29) - 12) / 100, 2),
           sentiment: round(((seed % 41) - 20) / 100, 2),
+          socialMentions: 8 + (seed % 35),
         };
       }
 
@@ -624,7 +630,8 @@
             : company.sentiment < -0.12
               ? ["Narracja rynkowa jest negatywna."]
               : ["Narracja rynkowa jest mieszana."];
-        return agent("Sentyment", company.sentiment, evidence);
+        evidence.push(`Wzmianki social/X w probce demo: ${company.socialMentions}.`);
+        return agent("Social / X", company.sentiment, evidence);
       }
 
       function scoreRisk(company, risk) {
@@ -723,6 +730,7 @@
             ${metric("P/E", company.pe.toFixed(1))}
             ${metric("Wzrost", percent(company.growth))}
             ${metric("Trend 30D", percent(company.trend))}
+            ${metric("Wzmianki social", String(company.socialMentions))}
           </div>
 
           <section class="section">

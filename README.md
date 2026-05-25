@@ -13,6 +13,7 @@ are connected.
 - Multi-agent orchestration layer.
 - Separate agents for fundamentals, technicals, sentiment, risk, and final
   synthesis.
+- Optional X recent-search ingestion for social sentiment analysis.
 - Typed request/response models.
 - Provider interfaces for future market data and LLM integrations.
 - Docker and Docker Compose setup.
@@ -55,6 +56,27 @@ To publish it on GitHub:
 
 The demo is intentionally deterministic and does not yet fetch live market data.
 It is a frontend shell for the agent workflow.
+
+## X Social Data
+
+The backend can enrich a company report with recent public posts from X. Set a
+Bearer Token in `.env`:
+
+```bash
+X_BEARER_TOKEN=your_x_api_bearer_token
+X_RECENT_SEARCH_MAX_RESULTS=20
+```
+
+When the token is present, the API uses X API v2 recent search:
+
+```text
+GET https://api.x.com/2/tweets/search/recent
+```
+
+It requests recent posts matching the company name, ticker, or cashtag, then
+normalizes post text, public engagement metrics, topics, and sentiment into the
+sentiment agent. Without a token, the app uses a deterministic mock social
+provider so local development and tests keep working.
 
 ## Example Request
 

@@ -5,11 +5,17 @@ from stock_agents.agents.synthesis import SynthesisAgent
 from stock_agents.agents.technical import TechnicalAgent
 from stock_agents.core.schemas import AnalysisRequest, AnalysisResponse
 from stock_agents.data.provider import MarketDataProvider
+from stock_agents.data.social_provider import SocialDataProvider
 
 
 class AnalysisOrchestrator:
-    def __init__(self, market_data_provider: MarketDataProvider) -> None:
+    def __init__(
+        self,
+        market_data_provider: MarketDataProvider,
+        social_data_provider: SocialDataProvider | None = None,
+    ) -> None:
         self.market_data_provider = market_data_provider
+        self.social_data_provider = social_data_provider
         self.agents = [
             FundamentalAgent(),
             TechnicalAgent(),
@@ -20,5 +26,8 @@ class AnalysisOrchestrator:
 
     def analyze(self, request: AnalysisRequest) -> AnalysisResponse:
         snapshot = self.market_data_provider.get_snapshot(request.symbol)
+        if self.social_data_provider is not None:
+            social_signal = self.social_data_provider.get_signal(snapshot.symbol, snapshot.company_name)
+            snapshot = snapshot.model_copy(update={"social_signal": social_signal})
         findings = [agent.analyze(snapshot, request) for agent in self.agents]
         return self.synthesis_agent.synthesize(snapshot, request, findings)
