@@ -24,3 +24,10 @@ def test_analyze_endpoint() -> None:
     assert body["symbol"] == "AAPL"
     assert body["findings"]
     assert body["findings"][1]["agent"] == "technical"
+
+
+def test_ollama_health_endpoint() -> None:
+    response = client.get("/api/v1/ollama/health")
+
+    assert response.status_code == 200
+    assert "available" in response.json()

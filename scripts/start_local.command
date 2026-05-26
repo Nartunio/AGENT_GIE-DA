@@ -20,6 +20,16 @@ source .venv/bin/activate
 echo "Installing/updating local package..."
 python -m pip install -e ".[dev]"
 
+if command -v ollama >/dev/null 2>&1; then
+  if curl -s http://127.0.0.1:11434/api/tags >/dev/null 2>&1; then
+    echo "Ollama is available on http://127.0.0.1:11434"
+  else
+    echo "Ollama is installed but not running. Start it with: ollama serve"
+  fi
+else
+  echo "Ollama is not installed. Install from https://ollama.com and pull a model, e.g. ollama pull llama3.1:8b"
+fi
+
 echo "Stopping old local servers if they are running..."
 lsof -ti tcp:"$API_PORT" | xargs kill -9 2>/dev/null || true
 lsof -ti tcp:"$DEMO_PORT" | xargs kill -9 2>/dev/null || true

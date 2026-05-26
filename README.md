@@ -17,6 +17,7 @@ are connected.
 - Optional Stooq CSV market-data ingestion with no API key required.
 - Technical chart analysis with trend lines, support, resistance, moving
   averages, and pattern hints.
+- Local Ollama debate agents: BullAgent, BearAgent, and JudgeAgent.
 - Typed request/response models.
 - Provider interfaces for future market data and LLM integrations.
 - Docker and Docker Compose setup.
@@ -51,6 +52,51 @@ The launcher starts:
 - API docs: `http://127.0.0.1:8000/docs`
 
 It also exists on the Desktop as `AGENT_GIE-DA-start.command` for quick launch.
+
+## Ollama Debate Agents
+
+The backend can run a deeper local multi-agent debate with free Ollama models:
+
+- `BullAgent`: builds the strongest case for buying.
+- `BearAgent`: builds the strongest case against buying.
+- `JudgeAgent`: compares evidence quality, identifies missing data, and issues
+  the final investment committee decision.
+
+Install Ollama and pull a model:
+
+```bash
+ollama pull llama3.1:8b
+```
+
+Then start the app locally and call:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/debate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "symbol": "AAPL",
+    "horizon": "medium",
+    "risk_profile": "balanced",
+    "depth": "deep",
+    "rounds": 2,
+    "bull_model": "llama3.1:8b",
+    "bear_model": "llama3.1:8b",
+    "judge_model": "llama3.1:8b"
+  }'
+```
+
+Local configuration:
+
+```bash
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_BULL_MODEL=llama3.1:8b
+OLLAMA_BEAR_MODEL=llama3.1:8b
+OLLAMA_JUDGE_MODEL=llama3.1:8b
+OLLAMA_TIMEOUT_SECONDS=120
+```
+
+The GitHub Pages demo includes an Ollama panel for local use. It calls the local
+API at `http://127.0.0.1:8000`, so use the desktop launcher when running it.
 
 ## Docker
 

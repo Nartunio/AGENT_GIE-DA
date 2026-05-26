@@ -139,6 +139,17 @@
         background: #1d4ed8;
       }
 
+      .secondary {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
       .chips {
         display: flex;
         flex-wrap: wrap;
@@ -322,6 +333,45 @@
         font-size: 13px;
       }
 
+      .debate-controls {
+        display: grid;
+        gap: 10px;
+      }
+
+      .debate {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 18px;
+        display: grid;
+        gap: 14px;
+      }
+
+      .debate-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .debate-card {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        background: #fbfcfe;
+      }
+
+      .debate-card h4 {
+        margin: 0 0 8px;
+        font-size: 15px;
+      }
+
+      .debate-card p,
+      .debate-status {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
       .agents {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -403,7 +453,8 @@
         }
 
         .grid,
-        .agents {
+        .agents,
+        .debate-grid {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
       }
@@ -423,7 +474,8 @@
         }
 
         .grid,
-        .agents {
+        .agents,
+        .debate-grid {
           grid-template-columns: 1fr;
         }
       }
@@ -466,6 +518,30 @@
 
           <button class="primary" type="submit">Generuj raport</button>
         </form>
+
+        <div class="panel debate-controls">
+          <div class="field">
+            <label for="depth">Glebokosc debaty Ollama</label>
+            <select id="depth" name="depth">
+              <option value="quick">Szybka</option>
+              <option value="standard">Standard</option>
+              <option value="deep" selected>Gleboka</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="rounds">Rundy wymiany argumentow</label>
+            <select id="rounds" name="rounds">
+              <option value="1">1</option>
+              <option value="2" selected>2</option>
+              <option value="3">3</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="model">Model Ollama</label>
+            <input id="model" value="llama3.1:8b" autocomplete="off" />
+          </div>
+          <button class="secondary" id="debate-button" type="button">Debata Ollama</button>
+        </div>
 
         <div class="chips" aria-label="Popularne spolki">
           <button class="chip" type="button" data-symbol="PKO BP">PKO BP</button>
@@ -587,6 +663,11 @@
       const form = document.querySelector("#analysis-form");
       const companyInput = document.querySelector("#company");
       const report = document.querySelector("#report");
+      const debateButton = document.querySelector("#debate-button");
+      const depthInput = document.querySelector("#depth");
+      const roundsInput = document.querySelector("#rounds");
+      const modelInput = document.querySelector("#model");
+      let currentState = null;
 
       document.querySelectorAll("[data-symbol]").forEach((button) => {
         button.addEventListener("click", () => {
@@ -603,7 +684,20 @@
         const risk = String(formData.get("risk"));
         const company = resolveCompany(query);
         const analysis = analyze(company, horizon, risk);
+        currentState = { company, analysis, horizon, risk };
         renderReport(company, analysis, horizon, risk);
+      });
+
+      debateButton.addEventListener("click", async () => {
+        const formData = new FormData(form);
+        const query = String(formData.get("company") || "").trim();
+        const horizon = String(formData.get("horizon"));
+        const risk = String(formData.get("risk"));
+        const company = resolveCompany(query);
+        const analysis = currentState?.analysis || analyze(company, horizon, risk);
+        currentState = { company, analysis, horizon, risk };
+        renderReport(company, analysis, horizon, risk);
+        await runOllamaDebate(company, horizon, risk);
       });
 
       function resolveCompany(query) {
@@ -839,6 +933,11 @@
             </div>
           </section>
 
+          <section class="debate" id="ollama-debate">
+            <h3>Debata Ollama</h3>
+            <p class="debate-status">Uruchom lokalna debate: agent za zakupem, agent przeciw i arbiter porownujacy argumenty.</p>
+          </section>
+
           <section class="section">
             <h3>Teza</h3>
             <p>${escapeHtml(analysis.thesis)}</p>
@@ -857,6 +956,73 @@
             <h3>Nastepne kroki</h3>
             <ul>${analysis.actions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
           </section>
+        `;
+      }
+
+      async function runOllamaDebate(company, horizon, risk) {
+        const container = document.querySelector("#ollama-debate");
+        container.innerHTML = `
+          <h3>Debata Ollama</h3>
+          <p class="debate-status">Pracuje lokalnie: BullAgent buduje case za zakupem, BearAgent kontruje, JudgeAgent porownuje argumenty. To moze potrwac.</p>
+        `;
+        const model = modelInput.value.trim() || "llama3.1:8b";
+        try {
+          const response = await fetch("http://127.0.0.1:8000/api/v1/debate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              symbol: company.symbol.replace(".WA", ""),
+              horizon,
+              risk_profile: risk,
+              depth: depthInput.value,
+              rounds: Number(roundsInput.value),
+              bull_model: model,
+              bear_model: model,
+              judge_model: model,
+            }),
+          });
+          if (!response.ok) {
+            throw new Error(await response.text());
+          }
+          renderDebate(await response.json());
+        } catch (error) {
+          container.innerHTML = `
+            <h3>Debata Ollama</h3>
+            <p class="debate-status">Nie udalo sie polaczyc z lokalnym API/Ollama. Uruchom launcher z pulpitu, sprawdz czy Ollama dziala na 127.0.0.1:11434 i czy model jest pobrany.</p>
+            <pre style="white-space:pre-wrap;color:#b91c1c;margin:0">${escapeHtml(String(error.message || error))}</pre>
+          `;
+        }
+      }
+
+      function renderDebate(data) {
+        const container = document.querySelector("#ollama-debate");
+        container.innerHTML = `
+          <h3>Debata Ollama</h3>
+          <p class="debate-status"><strong>Decyzja:</strong> ${escapeHtml(data.final_decision)} · pewnosc ${(data.confidence * 100).toFixed(0)}% · rundy ${data.rounds} · tryb ${data.depth}</p>
+          <div class="debate-grid">
+            ${renderDebateCard("BullAgent", data.bull_case)}
+            ${renderDebateCard("BearAgent", data.bear_case)}
+            ${renderDebateCard("JudgeAgent", data.judge)}
+          </div>
+          <section class="section" style="padding:14px">
+            <h3>Porownanie argumentow</h3>
+            <ul>${(data.comparison || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+          </section>
+          <section class="section" style="padding:14px">
+            <h3>Brakujace informacje</h3>
+            <ul>${(data.missing_information || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+          </section>
+        `;
+      }
+
+      function renderDebateCard(title, output) {
+        const argumentsList = (output.arguments || []).slice(0, 6);
+        return `
+          <article class="debate-card">
+            <h4>${escapeHtml(title)} · ${escapeHtml(output.model)}</h4>
+            <p><strong>Teza:</strong> ${escapeHtml(output.thesis)}</p>
+            <ul>${argumentsList.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+          </article>
         `;
       }
 

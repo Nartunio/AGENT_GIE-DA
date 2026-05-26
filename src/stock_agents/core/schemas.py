@@ -15,6 +15,12 @@ class RiskProfile(StrEnum):
     aggressive = "aggressive"
 
 
+class DebateDepth(StrEnum):
+    quick = "quick"
+    standard = "standard"
+    deep = "deep"
+
+
 class Rating(StrEnum):
     avoid = "avoid"
     watch = "watch"
@@ -32,6 +38,15 @@ class AnalysisRequest(BaseModel):
     @classmethod
     def normalize_symbol(cls, value: str) -> str:
         return value.strip().upper()
+
+
+class DebateRequest(AnalysisRequest):
+    depth: DebateDepth = DebateDepth.deep
+    rounds: int = Field(default=2, ge=1, le=3)
+    bull_model: str | None = None
+    bear_model: str | None = None
+    judge_model: str | None = None
+    include_raw_context: bool = False
 
 
 class PriceBar(BaseModel):
@@ -124,6 +139,32 @@ class AnalysisResponse(BaseModel):
     findings: list[AgentFinding]
     risks: list[str]
     next_steps: list[str]
+
+
+class DebateAgentOutput(BaseModel):
+    role: str
+    model: str
+    thesis: str
+    arguments: list[str] = Field(default_factory=list)
+    rebuttals: list[str] = Field(default_factory=list)
+    evidence_requests: list[str] = Field(default_factory=list)
+    raw_output: str
+
+
+class DebateResponse(BaseModel):
+    symbol: str
+    company_name: str
+    depth: DebateDepth
+    rounds: int
+    base_analysis: AnalysisResponse
+    bull_case: DebateAgentOutput
+    bear_case: DebateAgentOutput
+    judge: DebateAgentOutput
+    final_decision: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    comparison: list[str] = Field(default_factory=list)
+    missing_information: list[str] = Field(default_factory=list)
+    context: str | None = None
 
 
 class HealthResponse(BaseModel):

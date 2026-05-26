@@ -36,6 +36,20 @@ resistance, chart overlays, and pattern hints. `TechnicalAgent` uses those
 signals in its score and evidence, while the GitHub Pages demo renders the same
 concept visually as an SVG chart.
 
+## Ollama Debate
+
+The Ollama debate layer is intentionally separated from the fast deterministic
+analysis endpoint. `/api/v1/debate` first builds the ordinary multi-agent
+snapshot, then sends the same context to three local model roles:
+
+- `BullAgent` argues for buying.
+- `BearAgent` argues against buying.
+- `JudgeAgent` compares both cases and returns the final decision.
+
+The request controls analysis depth, number of rounds, and model names for each
+role. This keeps ordinary analysis responsive while allowing deeper local
+reasoning when Ollama is running.
+
 Social integrations implement `SocialDataProvider`. The included
 `XRecentSearchProvider` uses X API v2 recent search when `X_BEARER_TOKEN` is
 configured. This keeps credentials on the backend; the static GitHub Pages demo
