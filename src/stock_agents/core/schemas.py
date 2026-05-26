@@ -21,6 +21,14 @@ class DebateDepth(StrEnum):
     deep = "deep"
 
 
+class InvestorStyle(StrEnum):
+    value = "value"
+    growth = "growth"
+    quality = "quality"
+    dividend = "dividend"
+    speculative = "speculative"
+
+
 class Rating(StrEnum):
     avoid = "avoid"
     watch = "watch"
@@ -43,6 +51,9 @@ class AnalysisRequest(BaseModel):
 class DebateRequest(AnalysisRequest):
     depth: DebateDepth = DebateDepth.deep
     rounds: int = Field(default=2, ge=1, le=3)
+    investor_style: InvestorStyle = InvestorStyle.quality
+    margin_of_safety_required: float = Field(default=0.15, ge=0.0, le=0.6)
+    user_thesis: str | None = Field(default=None, max_length=1000)
     bull_model: str | None = None
     bear_model: str | None = None
     judge_model: str | None = None
@@ -151,6 +162,13 @@ class DebateAgentOutput(BaseModel):
     raw_output: str
 
 
+class AgentRoleProfile(BaseModel):
+    role: str
+    objective: str
+    must_check: list[str]
+    decision_bias: str
+
+
 class DebateResponse(BaseModel):
     symbol: str
     company_name: str
@@ -160,6 +178,7 @@ class DebateResponse(BaseModel):
     bull_case: DebateAgentOutput
     bear_case: DebateAgentOutput
     judge: DebateAgentOutput
+    role_profiles: list[AgentRoleProfile] = Field(default_factory=list)
     final_decision: str
     confidence: float = Field(ge=0.0, le=1.0)
     comparison: list[str] = Field(default_factory=list)

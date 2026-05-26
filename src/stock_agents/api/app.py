@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from stock_agents.agents.debate import OllamaDebateOrchestrator
+from stock_agents.agents.debate import OllamaDebateOrchestrator, role_profiles
 from stock_agents.core.config import get_settings
 from stock_agents.core.orchestrator import AnalysisOrchestrator
 from stock_agents.core.schemas import (
@@ -9,6 +9,7 @@ from stock_agents.core.schemas import (
     AnalysisResponse,
     DebateRequest,
     DebateResponse,
+    InvestorStyle,
     HealthResponse,
 )
 from stock_agents.data.mock_provider import MockMarketDataProvider
@@ -81,6 +82,28 @@ def ollama_health() -> dict[str, object]:
             "bear": settings.ollama_bear_model,
             "judge": settings.ollama_judge_model,
         },
+    }
+
+
+@app.get("/api/v1/debate/options")
+def debate_options() -> dict[str, object]:
+    return {
+        "depths": ["quick", "standard", "deep"],
+        "rounds": [1, 2, 3],
+        "investor_styles": [style.value for style in InvestorStyle],
+        "default_margin_of_safety": 0.15,
+        "default_models": {
+            "bull": settings.ollama_bull_model,
+            "bear": settings.ollama_bear_model,
+            "judge": settings.ollama_judge_model,
+        },
+        "recommended_models": [
+            "llama3.1:8b",
+            "qwen2.5:7b",
+            "mistral:7b",
+            "gemma2:9b",
+        ],
+        "roles": [profile.model_dump() for profile in role_profiles()],
     }
 
 

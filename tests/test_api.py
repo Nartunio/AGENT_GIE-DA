@@ -31,3 +31,13 @@ def test_ollama_health_endpoint() -> None:
 
     assert response.status_code == 200
     assert "available" in response.json()
+
+
+def test_debate_options_endpoint() -> None:
+    response = client.get("/api/v1/debate/options")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert "deep" in body["depths"]
+    assert "quality" in body["investor_styles"]
+    assert len(body["roles"]) == 3

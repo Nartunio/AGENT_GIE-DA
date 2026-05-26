@@ -62,6 +62,15 @@ The backend can run a deeper local multi-agent debate with free Ollama models:
 - `JudgeAgent`: compares evidence quality, identifies missing data, and issues
   the final investment committee decision.
 
+Agent roles are intentionally biased and explicit:
+
+- `BullAgent` must identify upside drivers, catalysts, margin-of-safety logic,
+  trend confirmation, and invalidation levels.
+- `BearAgent` must identify valuation traps, downside scenarios, false
+  breakouts, data gaps, and reasons to wait or pick alternatives.
+- `JudgeAgent` must decide which side used stronger evidence for the selected
+  investor style and risk profile.
+
 Install Ollama and pull a model:
 
 ```bash
@@ -79,6 +88,9 @@ curl -X POST http://127.0.0.1:8000/api/v1/debate \
     "risk_profile": "balanced",
     "depth": "deep",
     "rounds": 2,
+    "investor_style": "quality",
+    "margin_of_safety_required": 0.15,
+    "user_thesis": "Buy only if the chart confirms and valuation risk is acceptable.",
     "bull_model": "llama3.1:8b",
     "bear_model": "llama3.1:8b",
     "judge_model": "llama3.1:8b"
@@ -97,6 +109,15 @@ OLLAMA_TIMEOUT_SECONDS=120
 
 The GitHub Pages demo includes an Ollama panel for local use. It calls the local
 API at `http://127.0.0.1:8000`, so use the desktop launcher when running it.
+
+Useful workflow endpoint:
+
+```bash
+curl http://127.0.0.1:8000/api/v1/debate/options
+```
+
+It returns available depths, investor styles, recommended local models, and the
+exact role profiles used by the debate agents.
 
 ## Docker
 

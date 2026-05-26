@@ -1,6 +1,7 @@
 from collections.abc import Callable
 
 from stock_agents.core.schemas import (
+    AgentRoleProfile,
     AnalysisRequest,
     AnalysisResponse,
     DebateAgentOutput,
@@ -77,6 +78,7 @@ class OllamaDebateOrchestrator:
             bull_case=bull,
             bear_case=bear,
             judge=judge,
+            role_profiles=role_profiles(),
             final_decision=final_decision,
             confidence=confidence,
             comparison=_extract_block_items(judge_raw, "COMPARISON"),
@@ -120,19 +122,62 @@ class OllamaDebateOrchestrator:
 
 BULL_SYSTEM = (
     "You are BullAgent, a rigorous buy-side analyst. Your job is to build the strongest "
-    "evidence-based case for buying the company. Be concrete, compare signals, and admit weak data."
+    "evidence-based case for buying the company. Be concrete, compare signals, and admit weak data. "
+    "You must quantify what would make the idea attractive, not simply sound optimistic."
 )
 
 BEAR_SYSTEM = (
     "You are BearAgent, a skeptical risk analyst. Your job is to build the strongest "
     "evidence-based case against buying the company. Focus on downside, valuation, invalidation, "
-    "data gaps, and better alternatives."
+    "data gaps, and better alternatives. You must distinguish real risk from generic fear."
 )
 
 JUDGE_SYSTEM = (
     "You are JudgeAgent, an investment committee chair. Compare BullAgent and BearAgent. "
-    "Reward evidence quality, punish speculation, identify missing data, and issue a balanced decision."
+    "Reward evidence quality, punish speculation, identify missing data, and issue a balanced decision. "
+    "You must explain why one side is stronger for the user's investor style."
 )
+
+
+def role_profiles() -> list[AgentRoleProfile]:
+    return [
+        AgentRoleProfile(
+            role="BullAgent",
+            objective="Find the strongest evidence-based reason to buy or keep the company on an active buy list.",
+            must_check=[
+                "upside drivers and catalysts",
+                "trend and support/resistance confirmation",
+                "quality of fundamentals versus valuation",
+                "what would invalidate the buy case",
+                "whether the upside compensates for the requested margin of safety",
+            ],
+            decision_bias="Optimistic, but required to admit missing evidence and quantify conditions.",
+        ),
+        AgentRoleProfile(
+            role="BearAgent",
+            objective="Find the strongest reason not to buy now and expose weak assumptions in the bullish case.",
+            must_check=[
+                "valuation risk and margin-of-safety failure",
+                "technical breakdown or false breakout risk",
+                "balance-sheet and business-model fragility",
+                "social/news hype versus durable information",
+                "better alternatives or reasons to wait",
+            ],
+            decision_bias="Skeptical, but required to avoid generic objections not supported by context.",
+        ),
+        AgentRoleProfile(
+            role="JudgeAgent",
+            objective="Compare both cases as an investment committee chair and decide what is more defensible.",
+            must_check=[
+                "which side uses stronger evidence",
+                "which claims are speculative",
+                "what information is missing before capital allocation",
+                "fit with horizon, risk profile, and investor style",
+                "final action: STRONG_BUY, BUY, WATCH, or AVOID",
+            ],
+            decision_bias="Neutral; penalizes overconfidence and rewards falsifiable arguments.",
+        ),
+    ]
 
 
 def build_company_context(
@@ -203,6 +248,18 @@ ANALYSIS DEPTH
 """.strip()
 
 
+def request_profile(request: DebateRequest) -> str:
+    thesis = request.user_thesis or "No user thesis provided."
+    return f"""
+USER WORKFLOW SETTINGS
+Horizon: {request.horizon}
+Risk profile: {request.risk_profile}
+Investor style: {request.investor_style}
+Required margin of safety: {request.margin_of_safety_required:.0%}
+User thesis to test: {thesis}
+""".strip()
+
+
 def bull_prompt(
     context: str,
     request: DebateRequest,
@@ -212,10 +269,10 @@ def bull_prompt(
     rebuttal = f"\nOPPONENT CASE TO REBUT:\n{opponent_case}\n" if opponent_case else ""
     return f"""
 Build the strongest BUY case for this company.
-Horizon: {request.horizon}
-Risk profile: {request.risk_profile}
 Round: {round_index}
 {rebuttal}
+{request_profile(request)}
+
 CONTEXT:
 {context}
 
@@ -223,6 +280,7 @@ Return exactly these sections:
 THESIS: one clear buy thesis.
 ARGUMENTS:
 - 5 to 9 detailed arguments, each tied to data from context.
+- Include catalysts, upside path, margin-of-safety argument, and invalidation level.
 REBUTTALS:
 - rebut the strongest bear objections if present.
 EVIDENCE_REQUESTS:
@@ -238,9 +296,8 @@ def bear_prompt(
 ) -> str:
     return f"""
 Build the strongest DO-NOT-BUY / SHORT-OF-CONVICTION case.
-Horizon: {request.horizon}
-Risk profile: {request.risk_profile}
 Round: {round_index}
+{request_profile(request)}
 
 BULL CASE TO CHALLENGE:
 {bull_case}
@@ -252,6 +309,7 @@ Return exactly these sections:
 THESIS: one clear skeptical thesis.
 ARGUMENTS:
 - 5 to 9 detailed arguments, each tied to data from context.
+- Include downside scenarios, valuation traps, technical failure points, and data gaps.
 REBUTTALS:
 - directly challenge weak bullish assumptions.
 EVIDENCE_REQUESTS:
@@ -262,8 +320,7 @@ EVIDENCE_REQUESTS:
 def judge_prompt(context: str, request: DebateRequest, bull_case: str, bear_case: str) -> str:
     return f"""
 Compare both cases and decide which is stronger for the requested investor profile.
-Horizon: {request.horizon}
-Risk profile: {request.risk_profile}
+{request_profile(request)}
 
 CONTEXT:
 {context}
@@ -286,6 +343,8 @@ REBUTTALS:
 - what each side failed to answer.
 MISSING_INFORMATION:
 - missing information that matters before real capital allocation.
+WORKFLOW:
+- recommended next action for the user.
 """.strip()
 
 

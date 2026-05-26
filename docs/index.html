@@ -35,7 +35,8 @@
 
       button,
       input,
-      select {
+      select,
+      textarea {
         font: inherit;
       }
 
@@ -103,7 +104,8 @@
       }
 
       input,
-      select {
+      select,
+      textarea {
         width: 100%;
         min-height: 42px;
         border: 1px solid rgba(255, 255, 255, 0.16);
@@ -114,12 +116,19 @@
         outline: none;
       }
 
+      textarea {
+        min-height: 76px;
+        padding: 10px 12px;
+        resize: vertical;
+      }
+
       select option {
         color: var(--text);
       }
 
       input:focus,
-      select:focus {
+      select:focus,
+      textarea:focus {
         border-color: #8ab4ff;
         box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.24);
       }
@@ -338,6 +347,12 @@
         gap: 10px;
       }
 
+      .split {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
       .debate {
         background: var(--surface);
         border: 1px solid var(--line);
@@ -370,6 +385,12 @@
         margin: 0;
         color: var(--muted);
         line-height: 1.45;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
       }
 
       .agents {
@@ -453,6 +474,7 @@
         }
 
         .grid,
+        .split,
         .agents,
         .debate-grid {
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -474,6 +496,7 @@
         }
 
         .grid,
+        .split,
         .agents,
         .debate-grid {
           grid-template-columns: 1fr;
@@ -536,9 +559,43 @@
               <option value="3">3</option>
             </select>
           </div>
+          <div class="split">
+            <div class="field">
+              <label for="investor-style">Styl inwestora</label>
+              <select id="investor-style">
+                <option value="quality" selected>Quality</option>
+                <option value="value">Value</option>
+                <option value="growth">Growth</option>
+                <option value="dividend">Dividend</option>
+                <option value="speculative">Speculative</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="margin-safety">Margines bezp.</label>
+              <select id="margin-safety">
+                <option value="0.05">5%</option>
+                <option value="0.10">10%</option>
+                <option value="0.15" selected>15%</option>
+                <option value="0.25">25%</option>
+                <option value="0.40">40%</option>
+              </select>
+            </div>
+          </div>
           <div class="field">
-            <label for="model">Model Ollama</label>
-            <input id="model" value="llama3.1:8b" autocomplete="off" />
+            <label for="bull-model">Model BullAgent</label>
+            <input id="bull-model" value="llama3.1:8b" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="bear-model">Model BearAgent</label>
+            <input id="bear-model" value="llama3.1:8b" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="judge-model">Model JudgeAgent</label>
+            <input id="judge-model" value="llama3.1:8b" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="user-thesis">Teza do sprawdzenia</label>
+            <textarea id="user-thesis" placeholder="Np. Kupic tylko jesli wybije opor i utrzyma marze."></textarea>
           </div>
           <button class="secondary" id="debate-button" type="button">Debata Ollama</button>
         </div>
@@ -666,8 +723,14 @@
       const debateButton = document.querySelector("#debate-button");
       const depthInput = document.querySelector("#depth");
       const roundsInput = document.querySelector("#rounds");
-      const modelInput = document.querySelector("#model");
+      const investorStyleInput = document.querySelector("#investor-style");
+      const marginSafetyInput = document.querySelector("#margin-safety");
+      const bullModelInput = document.querySelector("#bull-model");
+      const bearModelInput = document.querySelector("#bear-model");
+      const judgeModelInput = document.querySelector("#judge-model");
+      const userThesisInput = document.querySelector("#user-thesis");
       let currentState = null;
+      let lastDebateMarkdown = "";
 
       document.querySelectorAll("[data-symbol]").forEach((button) => {
         button.addEventListener("click", () => {
@@ -965,7 +1028,9 @@
           <h3>Debata Ollama</h3>
           <p class="debate-status">Pracuje lokalnie: BullAgent buduje case za zakupem, BearAgent kontruje, JudgeAgent porownuje argumenty. To moze potrwac.</p>
         `;
-        const model = modelInput.value.trim() || "llama3.1:8b";
+        const bullModel = bullModelInput.value.trim() || "llama3.1:8b";
+        const bearModel = bearModelInput.value.trim() || bullModel;
+        const judgeModel = judgeModelInput.value.trim() || bullModel;
         try {
           const response = await fetch("http://127.0.0.1:8000/api/v1/debate", {
             method: "POST",
@@ -976,9 +1041,12 @@
               risk_profile: risk,
               depth: depthInput.value,
               rounds: Number(roundsInput.value),
-              bull_model: model,
-              bear_model: model,
-              judge_model: model,
+              investor_style: investorStyleInput.value,
+              margin_of_safety_required: Number(marginSafetyInput.value),
+              user_thesis: userThesisInput.value.trim() || null,
+              bull_model: bullModel,
+              bear_model: bearModel,
+              judge_model: judgeModel,
             }),
           });
           if (!response.ok) {
@@ -996,9 +1064,13 @@
 
       function renderDebate(data) {
         const container = document.querySelector("#ollama-debate");
+        lastDebateMarkdown = debateToMarkdown(data);
         container.innerHTML = `
           <h3>Debata Ollama</h3>
           <p class="debate-status"><strong>Decyzja:</strong> ${escapeHtml(data.final_decision)} · pewnosc ${(data.confidence * 100).toFixed(0)}% · rundy ${data.rounds} · tryb ${data.depth}</p>
+          <div class="toolbar">
+            <button class="primary" type="button" onclick="downloadDebateMarkdown()">Eksport Markdown</button>
+          </div>
           <div class="debate-grid">
             ${renderDebateCard("BullAgent", data.bull_case)}
             ${renderDebateCard("BearAgent", data.bear_case)}
@@ -1024,6 +1096,43 @@
             <ul>${argumentsList.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
           </article>
         `;
+      }
+
+      function debateToMarkdown(data) {
+        const section = (title, items) => `\\n## ${title}\\n${(items || []).map((item) => `- ${item}`).join("\\n") || "- Brak"}`;
+        return `# Debata Ollama: ${data.company_name} (${data.symbol})
+
+Decyzja: ${data.final_decision}
+Pewnosc: ${(data.confidence * 100).toFixed(0)}%
+Tryb: ${data.depth}
+Rundy: ${data.rounds}
+
+## BullAgent
+${data.bull_case.thesis}
+${section("Argumenty BullAgent", data.bull_case.arguments)}
+${section("Kontry BullAgent", data.bull_case.rebuttals)}
+
+## BearAgent
+${data.bear_case.thesis}
+${section("Argumenty BearAgent", data.bear_case.arguments)}
+${section("Kontry BearAgent", data.bear_case.rebuttals)}
+
+## JudgeAgent
+${data.judge.thesis}
+${section("Porownanie", data.comparison)}
+${section("Brakujace informacje", data.missing_information)}
+`;
+      }
+
+      function downloadDebateMarkdown() {
+        if (!lastDebateMarkdown) return;
+        const blob = new Blob([lastDebateMarkdown], { type: "text/markdown" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "debata-ollama.md";
+        link.click();
+        URL.revokeObjectURL(url);
       }
 
       function renderAgent(agentResult) {
